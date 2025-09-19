@@ -33,6 +33,13 @@
 - 开发对应阿里AI平台 **理论**适合各AI模型调用
 
 <hr>
+> 国内AI平台
+
+- [阿里云百炼](https://bailian.console.aliyun.com/)
+- [硅基流动](https://www.siliconflow.cn/)
+- ~~- [openrouter](https://openrouter.ai/)~~
+
+<hr>
 
 ## 如何使用
 
