@@ -4,11 +4,29 @@
 
 ```xml
 
-<dependency>
-    <groupId>top.kloping.core</groupId>
-    <artifactId>springboot-aimodel</artifactId>
-    <version>1.0-SNAPSHOT</version>
-</dependency>
+<!--使用快照版本-->
+<repositories>
+    <repository>
+        <name>Central Portal Snapshots</name>
+        <id>central-portal-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+
+<!-- 引入依赖 -->
+<dependencies>
+    <dependency>
+        <groupId>top.kloping.core</groupId>
+        <artifactId>springboot-aimodel</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </dependency>
+</dependencies>
 
 ```
 
