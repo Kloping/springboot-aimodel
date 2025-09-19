@@ -7,7 +7,7 @@ import java.lang.annotation.*;
  * 注解在方法上的AI请求工具
  *
  * @author github kloping
- * @date 2025/9/19-13:47
+ * @since 2025/9/19-13:47
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

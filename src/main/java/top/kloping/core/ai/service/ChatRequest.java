@@ -11,7 +11,7 @@ import java.util.List;
  *
  *
  * @author github kloping
- * @date 2025/9/19-12:44
+ * @since 2025/9/19-12:44
  */
 @Getter
 public class ChatRequest {

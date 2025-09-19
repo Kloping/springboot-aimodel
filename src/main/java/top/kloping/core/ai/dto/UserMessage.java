@@ -10,7 +10,7 @@ import lombok.experimental.Accessors;
  *
  *
  * @author github kloping
- * @date 2025/9/19-10:44
+ * @since 2025/9/19-10:44
  */
 @EqualsAndHashCode(callSuper = true)
 public class UserMessage extends Message<String> {

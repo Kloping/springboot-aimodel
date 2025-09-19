@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
  *
  *
  * @author github kloping
- * @date 2025/9/19-10:56
+ * @since 2025/9/19-10:56
  */
 @EqualsAndHashCode(callSuper = true)
 public class ToolMessage extends Message<String> {

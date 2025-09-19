@@ -8,7 +8,7 @@ import lombok.Setter;
  *
  *
  * @author github kloping
- * @date 2025/9/19-10:43
+ * @since 2025/9/19-10:43
  */
 @Getter
 @EqualsAndHashCode
