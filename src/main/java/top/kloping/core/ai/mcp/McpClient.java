@@ -14,8 +14,11 @@ import top.kloping.core.ai.service.RequestTool;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,6 +61,7 @@ public class McpClient {
     private CountDownLatch cdl = new CountDownLatch(1);
 
     public void initialize() throws IOException, InterruptedException {
+        _id = 0;
         Request request = new Request.Builder().url(server + endpoint)
                 .header("Authorization", "Bearer " + token)
                 .header("Accept", "text/event-stream")
@@ -72,7 +76,6 @@ public class McpClient {
         if (response.body() != null) {
             bufferedReader = new BufferedReader(response.body().charStream());
         }
-        _over = false;
         String event = null;
         String data = null;
         while (bufferedReader != null) {
@@ -86,6 +89,8 @@ public class McpClient {
                 if (line.isEmpty()) continue;
                 log.debug("mcp client {} recv: {}", clientName, line);
                 kv = line.split(":", 2);
+            } catch (SocketTimeoutException e) {
+                break;
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
                 break;
@@ -106,11 +111,11 @@ public class McpClient {
         }
         if (bufferedReader != null) bufferedReader.close();
         _over = true;
-        log.warn("mcp client {} over,delay 5s reconnect.", clientName);
-        Thread.sleep(5000);
-        _id = 0;
         cdl = new CountDownLatch(1);
-        initialize();
+        log.warn("mcp client {} over,when call before reconnect.", clientName);
+//        log.warn("mcp client {} over,delay 5s reconnect.", clientName);
+//        Thread.sleep(5000);
+//        initialize();
     }
 
     private boolean _over = false;
@@ -118,7 +123,7 @@ public class McpClient {
     private String _endpoint;
     private String _protocol_version;
 
-    private void doEvent(String event, String data) throws IOException {
+    private void doEvent(String event, String data) throws IOException, InterruptedException {
         if (event.equals("endpoint")) {
             doEndpoint(data);
         } else if (event.equals("message")) {
@@ -136,8 +141,9 @@ public class McpClient {
         if (id == 0) {
             initializeResponse = JSON.parseObject(data, InitializeResponse.class);
             _protocol_version = initializeResponse.getResult().getProtocolVersion();
+            protocolVersion = _protocol_version;
             McpReqPack.Params params = new McpReqPack.Params();
-            params.setProtocolVersion(protocolVersion);
+            params.setProtocolVersion(_protocol_version);
             doReqBody(JSON.toJSONString(new InitializedRequest(null, params)));
             doReqBody(JSON.toJSONString(new ToolListRequest((_tool_list_id = _id++), null)));
         } else if (id == _tool_list_id) {
@@ -146,18 +152,19 @@ public class McpClient {
             for (ToolListResponse.Tool tool : tools) {
                 analyseMcpServerTools(tool);
             }
+            _over = false;
             cdl.countDown();
-            new Thread(() -> {
-                while (!_over) {
-                    try {
-                        McpReqPack<Object> reqPack = new McpReqPack<>(_id++, "ping", new Object());
-                        doReqBody(JSON.toJSONString(reqPack));
-                        Thread.sleep(heartbeat * 1000L);
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
-                    }
-                }
-            }).start();
+//            new Thread(() -> {
+//                while (!_over) {
+//                    try {
+//                        McpReqPack<Object> reqPack = new McpReqPack<>(_id++, "ping", new Object());
+//                        doReqBody(JSON.toJSONString(reqPack));
+//                        Thread.sleep(heartbeat * 1000L);
+//                    } catch (Exception e) {
+//                        log.error(e.getMessage(), e);
+//                    }
+//                }
+//            }).start();
         } else {
             if (id2runnable.containsKey(id)) {
                 id2runnable.get(id).onResponse(data);
@@ -174,6 +181,20 @@ public class McpClient {
     }
 
     private ToolMessage toolCall(AssistantMessage.ToolCall toolCall, ToolCallRequest request) {
+        if (_over) {
+            executor.execute(() -> {
+                try {
+                    initialize();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+            try {
+                cdl.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         int id = request.getId();
         AtomicReference<ToolMessage> toolMessage = new AtomicReference<>();
         try {
@@ -243,6 +264,8 @@ public class McpClient {
         String reqBody = JSON.toJSONString(initializeRequest);
         doReqBody(reqBody);
     }
+
+    public static final Executor executor = Executors.newSingleThreadExecutor();
 
     private void doReqBody(String reqBody) throws IOException {
         log.debug("mcp client {} send: {}", clientName, reqBody);

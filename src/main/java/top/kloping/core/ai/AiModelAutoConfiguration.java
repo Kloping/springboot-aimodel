@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import top.kloping.core.ai.mcp.McpClient;
 import top.kloping.core.ai.mcp.McpClientProperties;
 import top.kloping.core.ai.service.AiRequestModel;
@@ -60,6 +61,7 @@ public class AiModelAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @DependsOn(value = "defaultMcpClient")
     public AiRequestModel defaultAiRequestModel(AiModelProperties properties) {
         ChatContext chatContext = new ChatContext();
         chatContext.setModel(properties.getModel());

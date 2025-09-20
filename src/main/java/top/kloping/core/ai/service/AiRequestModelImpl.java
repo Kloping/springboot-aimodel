@@ -65,13 +65,13 @@ public class AiRequestModelImpl implements AiRequestModel {
     }
 
     private ChatResponse getChatResponse(ChatRequest chatRequest, Request request) {
-        log.debug("request start {} ", chatRequest);
+        log.debug("request start {} url {} ", request.hashCode(),request.url());
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 String responseBody = response.body().string();
                 JSONObject jsonObject = JSON.parseObject(responseBody);
                 ChatResponse chatResponse = handleChatResponse(jsonObject, chatRequest);
-                chatResponse.setIsCompleted(true);
+                if (chatResponse != null) chatResponse.setIsCompleted(true);
                 return chatResponse;
             } else {
                 log.error(response.body().string());
@@ -111,13 +111,12 @@ public class AiRequestModelImpl implements AiRequestModel {
         List<RequestTool> reqTools = chatRequest.getReqTools();
         if (chatRequest.getTools() != null) reqTools.addAll(chatRequest.getReqTools());
         for (McpClient mcpClient : mcpClients) {
-            if (mcpClient != null && !mcpClient.is_over()) reqTools.addAll(mcpClient.getRequestTools());
+            if (mcpClient != null) reqTools.addAll(mcpClient.getRequestTools());
         }
         if (!reqTools.isEmpty()) reqBody.put("tools", reqTools);
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), reqBody.toString());
         log.debug("set reqbody {}", reqBody);
         return new Request.Builder().header("Authorization", "Bearer " + properties.getToken())
-
                 .url(finalUrl).method("POST", body).build();
     }
 
