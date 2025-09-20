@@ -24,7 +24,7 @@
     <dependency>
         <groupId>top.kloping.core</groupId>
         <artifactId>springboot-aimodel</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.1-SNAPSHOT</version>
     </dependency>
 </dependencies>
 
