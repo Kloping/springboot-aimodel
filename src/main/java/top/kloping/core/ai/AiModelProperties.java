@@ -6,8 +6,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Slf4j
-@ConfigurationProperties(prefix = "top.kloping.ai")
-@ConditionalOnProperty(prefix = "top.kloping.ai", havingValue = "server",matchIfMissing = false)
 @Data
 public class AiModelProperties {
     public AiModelProperties() {

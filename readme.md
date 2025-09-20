@@ -46,7 +46,6 @@
 > application.yml 配置文件
 
 ```yaml
-## 关键配置
 top:
   kloping:
     ai:
@@ -54,7 +53,7 @@ top:
       server: https://dashscope.aliyuncs.com/compatible-mode
       # 对话路径 最后将路径拼接的
       path: /v1/chat/completions
-      token: sk-xxxxx
+      token: sk-xxxxxx
       # 对话模型
       model: qwen-plus-2025-01-25
       # 模型参数 --以下可以不填--
@@ -65,6 +64,16 @@ top:
       max_input_tokens: 2048 # 输入的最大长度
       enable_thinking: false # 是否启用思考模式
       seed: 0 # 0到231
+    ## MCP SERVER 配置 可以不配置
+    mcp:
+      server: https://dashscope.aliyuncs.com
+      endpoint: /api/v1/mcps/WebSearch/sse
+      token: sk-xxxxxx
+      heartbeat: 7
+
+logging:
+  level:
+    top.kloping.core.ai: debug
 ```
 
 > AiRequestTestDemo.java 测试启动类

@@ -2,6 +2,7 @@ package top.kloping.core.ai.service;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import top.kloping.core.ai.AiTool;
@@ -39,14 +40,14 @@ public class RequestTool {
         private List<String> required = new ArrayList<>();
     }
 
-
     @Data
-    @Accessors(chain = true)
     public static class ParameterDesc {
-        private String type;
         private String description;
+        private String title;
+        private String type;
+        @JSONField(name = "default")
+        private Object defaultValue;
     }
-
 
     public static final Map<Object, List<RequestTool>> TOOLS_MAP = new HashMap<>();
     public static final Map<String, Map.Entry<Object, Method>> NAME_2_METHOD = new HashMap<>();
@@ -155,21 +156,27 @@ public class RequestTool {
     }
 
 
-    public static ToolMessage toolCall(AssistantMessage.ToolCall toolCall) {
-        String name = toolCall.getFunction().getName();
-        JSONObject jsonObject = JSON.parseObject(toolCall.getFunction().getArguments());
-        java.util.Map.Entry<Object, Method> entry = RequestTool.NAME_2_METHOD.get(name);
-        Object tool = entry.getKey();
-        Method method = entry.getValue();
-        String result = null;
-        try {
-            Object[] args = RequestTool.getParams(method, jsonObject);
-            Object oo = method.invoke(tool, args);
-            oo = oo == null ? "" : oo;
-            result = oo.toString();
-        } catch (Exception e) {
-            result = "call failed! msg:" + e.getMessage();
+    public static List<ToolMessage> toolCall(List<AssistantMessage.ToolCall> toolCalls) {
+        List<ToolMessage> list = null;
+        for (AssistantMessage.ToolCall toolCall : toolCalls) {
+            String name = toolCall.getFunction().getName();
+            JSONObject jsonObject = JSON.parseObject(toolCall.getFunction().getArguments());
+            java.util.Map.Entry<Object, Method> entry = RequestTool.NAME_2_METHOD.get(name);
+            if (entry == null) return null;
+            Object tool = entry.getKey();
+            Method method = entry.getValue();
+            String result = null;
+            try {
+                Object[] args = RequestTool.getParams(method, jsonObject);
+                Object oo = method.invoke(tool, args);
+                oo = oo == null ? "" : oo;
+                result = oo.toString();
+            } catch (Exception e) {
+                result = "call failed! msg:" + e.getMessage();
+            }
+            if (list == null) list = new ArrayList<>();
+            list.add(new ToolMessage(result, toolCall.getId()));
         }
-        return new ToolMessage(result, toolCall.getId());
+        return list;
     }
 }
