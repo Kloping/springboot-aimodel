@@ -58,7 +58,7 @@ public class McpClient {
             .build();
     private CountDownLatch cdl = new CountDownLatch(1);
 
-    public void initialize() throws IOException {
+    public void initialize() throws IOException, InterruptedException {
         Request request = new Request.Builder().url(server + endpoint)
                 .header("Authorization", "Bearer " + token)
                 .header("Accept", "text/event-stream")
@@ -70,11 +70,12 @@ public class McpClient {
             return;
         }
         Reader reader = response.body().charStream();
+        _over = false;
         BufferedReader bufferedReader = new BufferedReader(reader);
         String event = null;
         String data = null;
         while (true) {
-            String[] kv = null;
+            String[] kv;
             try {
                 String line = bufferedReader.readLine();
                 if (line == null || line.isEmpty()) continue;
@@ -99,6 +100,11 @@ public class McpClient {
             }
         }
         _over = true;
+        log.warn("mcp client {} over,delay 5s reconnect.", clientName);
+        Thread.sleep(5000);
+        _id = 0;
+        cdl = new CountDownLatch(1);
+        initialize();
     }
 
     private boolean _over = false;

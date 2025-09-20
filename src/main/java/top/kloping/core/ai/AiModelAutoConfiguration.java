@@ -145,7 +145,8 @@ public class AiModelAutoConfiguration {
                 reqBody.put("messages", messages);
                 List<RequestTool> reqTools = chatRequest.getReqTools();
                 if (chatRequest.getTools() != null) reqTools.addAll(chatRequest.getReqTools());
-                if (mcpClient != null && !mcpClient.is_over()) reqTools.addAll(mcpClient.getRequestTools());
+                if (mcpClient != null && !mcpClient.is_over())
+                    reqTools.addAll(mcpClient.getRequestTools());
                 if (!reqTools.isEmpty()) reqBody.put("tools", reqTools);
                 RequestBody body = RequestBody.create(MediaType.parse("application/json"), reqBody.toString());
                 log.debug("set reqbody {}", reqBody);
