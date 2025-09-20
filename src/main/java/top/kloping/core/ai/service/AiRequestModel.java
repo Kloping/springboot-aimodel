@@ -1,5 +1,7 @@
 package top.kloping.core.ai.service;
 
+import top.kloping.core.ai.mcp.McpClient;
+
 /**
  * AI 请求定义接口
  *
@@ -13,7 +15,11 @@ public interface AiRequestModel {
 
     ChatResponse doChat(ChatRequest request);
 
+    ChatResponse doStreamChat(ChatRequest request);
+
     void clearChatMemory();
 
     void clearToolMessage();
+
+    void addMcpServer(McpClient mcpClient);
 }

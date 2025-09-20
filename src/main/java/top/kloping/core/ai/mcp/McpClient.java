@@ -14,7 +14,6 @@ import top.kloping.core.ai.service.RequestTool;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -69,16 +68,22 @@ public class McpClient {
             log.error(response.body().string());
             return;
         }
-        Reader reader = response.body().charStream();
+        BufferedReader bufferedReader = null;
+        if (response.body() != null) {
+            bufferedReader = new BufferedReader(response.body().charStream());
+        }
         _over = false;
-        BufferedReader bufferedReader = new BufferedReader(reader);
         String event = null;
         String data = null;
-        while (true) {
+        while (bufferedReader != null) {
             String[] kv;
             try {
                 String line = bufferedReader.readLine();
-                if (line == null || line.isEmpty()) continue;
+                if (line == null) {
+                    log.warn("mcp readline is null break!");
+                    break;
+                }
+                if (line.isEmpty()) continue;
                 log.debug("mcp client {} recv: {}", clientName, line);
                 kv = line.split(":", 2);
             } catch (IOException e) {
@@ -99,6 +104,7 @@ public class McpClient {
                 log.error(e.getMessage(), e);
             }
         }
+        if (bufferedReader != null) bufferedReader.close();
         _over = true;
         log.warn("mcp client {} over,delay 5s reconnect.", clientName);
         Thread.sleep(5000);
@@ -187,18 +193,21 @@ public class McpClient {
         return toolMessage.get();
     }
 
+    public ToolMessage toolCall(AssistantMessage.ToolCall toolCall) {
+        String name = toolCall.getFunction().getName();
+        String arguments = toolCall.getFunction().getArguments();
+        JSONObject jsonObject = JSONObject.parseObject(arguments);
+        ToolCallRequest.Params params = new ToolCallRequest.Params();
+        params.setName(name);
+        params.setArguments(jsonObject);
+        ToolCallRequest request = new ToolCallRequest(_id++, params);
+        return toolCall(toolCall, request);
+    }
+
     public List<ToolMessage> toolCall(List<AssistantMessage.ToolCall> toolCalls) {
         List<ToolMessage> toolMessages = new LinkedList<>();
         for (AssistantMessage.ToolCall toolCall : toolCalls) {
-            String name = toolCall.getFunction().getName();
-            String arguments = toolCall.getFunction().getArguments();
-            JSONObject jsonObject = JSONObject.parseObject(arguments);
-            ToolCallRequest.Params params = new ToolCallRequest.Params();
-            params.setName(name);
-            params.setArguments(jsonObject);
-            ToolCallRequest request = new ToolCallRequest(_id++, params);
-            ToolMessage toolMessage = toolCall(toolCall, request);
-            toolMessages.add(toolMessage);
+            toolMessages.add(toolCall(toolCall));
         }
         return toolMessages;
     }

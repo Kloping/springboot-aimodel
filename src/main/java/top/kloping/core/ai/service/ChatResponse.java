@@ -4,6 +4,9 @@ import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 import top.kloping.core.ai.dto.Message;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.List;
 
 /**
@@ -24,10 +27,13 @@ public class ChatResponse {
     private String system_fingerprint;
     private String model;
 
+    @JSONField(serialize = false, deserialize = false)
+    private Boolean isCompleted = false;
+
     @Data
     public static class Choices {
         @JSONField(deserialize = false)
-        private Message message;
+        private Message<?> message;
         private String finish_reason;
         private Integer index;
         private Object logprobs;
@@ -49,4 +55,5 @@ public class ChatResponse {
         Message<?> message = getChatContext().getMessages().get(getChatContext().getMessages().size() - 1);
         return message.getContent().toString();
     }
+
 }
