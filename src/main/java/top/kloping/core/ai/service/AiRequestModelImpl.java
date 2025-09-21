@@ -246,7 +246,7 @@ public class AiRequestModelImpl implements AiRequestModel {
      * 构建工具列表
      */
     private List<RequestTool> buildToolList(ChatRequest chatRequest) {
-        List<RequestTool> reqTools = chatRequest.getReqTools();
+        List<RequestTool> reqTools = new LinkedList<>();
         if (chatRequest.getTools() != null) {
             reqTools.addAll(chatRequest.getReqTools());
         }
