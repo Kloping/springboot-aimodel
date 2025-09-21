@@ -1,6 +1,5 @@
 package top.kloping.core.ai.mcp.dto;
 
-import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 import top.kloping.core.ai.service.RequestTool;
 

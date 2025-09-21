@@ -4,9 +4,6 @@ import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 import top.kloping.core.ai.dto.Message;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.List;
 
 /**

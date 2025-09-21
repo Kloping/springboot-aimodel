@@ -14,10 +14,10 @@ import org.springframework.context.annotation.DependsOn;
 import top.kloping.core.ai.mcp.McpClient;
 import top.kloping.core.ai.mcp.McpClientProperties;
 import top.kloping.core.ai.pool.HttpClientPoolManager;
-import top.kloping.core.ai.validation.ConfigurationValidator;
 import top.kloping.core.ai.service.AiRequestModel;
 import top.kloping.core.ai.service.AiRequestModelImpl;
 import top.kloping.core.ai.service.ChatContext;
+import top.kloping.core.ai.validation.ConfigurationValidator;
 
 import java.util.concurrent.TimeUnit;
 
