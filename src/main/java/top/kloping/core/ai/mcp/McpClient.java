@@ -16,14 +16,20 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- *
+ * MCP (Model Context Protocol) 客户端
+ * 提供与MCP服务器的连接和工具调用功能
+ * 线程安全的实现
  *
  * @author github kloping
  * @since 2025/9/20-10:44
@@ -61,7 +67,7 @@ public class McpClient {
     private CountDownLatch cdl = new CountDownLatch(1);
 
     public void initialize() throws IOException, InterruptedException {
-        _id = 0;
+        _id.set(0);
         Request request = new Request.Builder().url(server + endpoint)
                 .header("Authorization", "Bearer " + token)
                 .header("Accept", "text/event-stream")
@@ -118,10 +124,10 @@ public class McpClient {
 //        initialize();
     }
 
-    private boolean _over = false;
-    private int _id = 0;
-    private String _endpoint;
-    private String _protocol_version;
+    private volatile boolean _over = false;
+    private final AtomicInteger _id = new AtomicInteger(0);
+    private volatile String _endpoint;
+    private volatile String _protocol_version;
 
     private void doEvent(String event, String data) throws IOException, InterruptedException {
         if (event.equals("endpoint")) {
@@ -145,7 +151,7 @@ public class McpClient {
             McpReqPack.Params params = new McpReqPack.Params();
             params.setProtocolVersion(_protocol_version);
             doReqBody(JSON.toJSONString(new InitializedRequest(null, params)));
-            doReqBody(JSON.toJSONString(new ToolListRequest((_tool_list_id = _id++), null)));
+            doReqBody(JSON.toJSONString(new ToolListRequest((_tool_list_id = _id.getAndIncrement()), null)));
         } else if (id == _tool_list_id) {
             ToolListResponse toolListResponse = JSON.parseObject(data, ToolListResponse.class);
             ToolListResponse.Tool[] tools = toolListResponse.getResult().getTools();
@@ -173,8 +179,8 @@ public class McpClient {
         }
     }
 
-    private Map<Integer, ToolCallResponse> id2runnable = new HashMap<>();
-    private Map<String, ToolListResponse.Tool> tool = new HashMap<>();
+    private final Map<Integer, ToolCallResponse> id2runnable = new ConcurrentHashMap<>();
+    private final Map<String, ToolListResponse.Tool> tool = new ConcurrentHashMap<>();
 
     private void analyseMcpServerTools(ToolListResponse.Tool tool) {
         this.tool.put(tool.getName(), tool);
@@ -221,7 +227,7 @@ public class McpClient {
         ToolCallRequest.Params params = new ToolCallRequest.Params();
         params.setName(name);
         params.setArguments(jsonObject);
-        ToolCallRequest request = new ToolCallRequest(_id++, params);
+        ToolCallRequest request = new ToolCallRequest(_id.getAndIncrement(), params);
         return toolCall(toolCall, request);
     }
 
@@ -260,7 +266,7 @@ public class McpClient {
         params.setClientInfo(clientInfo);
         params.setCapabilities(Map.of());
         params.setProtocolVersion(protocolVersion);
-        InitializeRequest initializeRequest = new InitializeRequest(_id++, params);
+        InitializeRequest initializeRequest = new InitializeRequest(_id.getAndIncrement(), params);
         String reqBody = JSON.toJSONString(initializeRequest);
         doReqBody(reqBody);
     }

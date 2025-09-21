@@ -1,9 +1,8 @@
 package top.kloping.core.ai.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 /**
  *
@@ -14,10 +13,22 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class ToolMessage extends Message<String> {
     public static final String TYPE = "tool";
-    private String tool_call_id;
+    private final String tool_call_id;
 
     public ToolMessage(String content, String tool_call_id) {
         super(TYPE, content);
         this.tool_call_id = tool_call_id;
     }
+
+    public ToolMessage(String content, String tool_call_id, boolean isFinished) {
+        super(TYPE, content);
+        this.tool_call_id = tool_call_id;
+        this.isFinished = isFinished;
+    }
+
+    @JSONField(serialize = false, deserialize = false)
+    @Getter
+    private boolean isFinished = false;
+
+
 }

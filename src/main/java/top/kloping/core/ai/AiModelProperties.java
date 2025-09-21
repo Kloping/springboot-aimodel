@@ -4,12 +4,31 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
+import top.kloping.core.ai.exception.AiModelException;
+import top.kloping.core.ai.validation.ConfigurationValidator;
 
+/**
+ * AI模型配置属性类
+ * 包含所有AI模型相关的配置项
+ *
+ * @author github kloping
+ * @since 2025/9/19
+ */
 @Slf4j
 @Data
 public class AiModelProperties {
+    
     public AiModelProperties() {
-        log.info("ai model properties initialize.");
+        log.info("AI model properties initialize.");
+    }
+    
+    /**
+     * 配置验证方法
+     */
+    public void validateConfiguration() {
+        ConfigurationValidator.validateAiModelProperties(this);
+        log.info("AI model configuration validation passed.");
     }
 
     /**

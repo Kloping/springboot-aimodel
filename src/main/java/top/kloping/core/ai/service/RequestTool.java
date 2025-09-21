@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import top.kloping.core.ai.AiTool;
 import top.kloping.core.ai.AiToolParm;
 import top.kloping.core.ai.dto.AssistantMessage;
@@ -12,14 +13,18 @@ import top.kloping.core.ai.dto.ToolMessage;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 请求工具类
+ * 处理AI工具的注册、调用和参数解析
  *
  * @author github kloping
  * @since 2025/9/19-14:21
  */
 @Data
 @Accessors(chain = true)
+@Slf4j
 public class RequestTool {
     private final String type = "function";
     private Function function;
@@ -49,8 +54,8 @@ public class RequestTool {
         private Object defaultValue;
     }
 
-    public static final Map<Object, List<RequestTool>> TOOLS_MAP = new HashMap<>();
-    public static final Map<String, Map.Entry<Object, Method>> NAME_2_METHOD = new HashMap<>();
+    public static final Map<Object, List<RequestTool>> TOOLS_MAP = new ConcurrentHashMap<>();
+    public static final Map<String, Map.Entry<Object, Method>> NAME_2_METHOD = new ConcurrentHashMap<>();
 
     public static synchronized void analyseObjectTools(List<Object> tools) {
         for (Object tool : tools) {
@@ -157,25 +162,54 @@ public class RequestTool {
 
 
     public static List<ToolMessage> toolCall(List<AssistantMessage.ToolCall> toolCalls) {
-        List<ToolMessage> list = null;
+        if (toolCalls == null || toolCalls.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ToolMessage> list = new ArrayList<>();
         for (AssistantMessage.ToolCall toolCall : toolCalls) {
-            String name = toolCall.getFunction().getName();
-            JSONObject jsonObject = JSON.parseObject(toolCall.getFunction().getArguments());
-            java.util.Map.Entry<Object, Method> entry = RequestTool.NAME_2_METHOD.get(name);
-            if (entry == null) return null;
-            Object tool = entry.getKey();
-            Method method = entry.getValue();
-            String result = null;
             try {
-                Object[] args = RequestTool.getParams(method, jsonObject);
-                Object oo = method.invoke(tool, args);
-                oo = oo == null ? "" : oo;
-                result = oo.toString();
+                String name = toolCall.getFunction().getName();
+                if (name == null || name.trim().isEmpty()) {
+//                    list.add(new ToolMessage("工具名称不能为空", toolCall.getId()));
+                    continue;
+                }
+
+                String arguments = toolCall.getFunction().getArguments();
+                JSONObject jsonObject;
+                try {
+                    jsonObject = JSON.parseObject(arguments);
+                } catch (Exception e) {
+//                    list.add(new ToolMessage("参数解析失败: " + e.getMessage(), toolCall.getId()));
+                    continue;
+                }
+
+                Map.Entry<Object, Method> entry = NAME_2_METHOD.get(name);
+                if (entry == null) {
+//                    list.add(new ToolMessage("未找到工具: " + name, toolCall.getId()));
+                    continue;
+                }
+
+                Object tool = entry.getKey();
+                Method method = entry.getValue();
+                String result;
+
+                try {
+                    Object[] args = getParams(method, jsonObject);
+                    Object returnValue = method.invoke(tool, args);
+                    result = returnValue == null ? "" : returnValue.toString();
+                } catch (Exception e) {
+                    result = "工具调用失败: " + e.getMessage();
+                    // 记录详细错误信息用于调试
+                    log.error("Tool invocation failed for {}: {}", name, e.getMessage(), e);
+                }
+
+                list.add(new ToolMessage(result, toolCall.getId(), true));
             } catch (Exception e) {
-                result = "call failed! msg:" + e.getMessage();
+                log.error("Unexpected error processing tool call: {}", e.getMessage(), e);
+//                list.add(new ToolMessage("处理工具调用时发生意外错误: " + e.getMessage(),
+//                        toolCall.getId()));
             }
-            if (list == null) list = new ArrayList<>();
-            list.add(new ToolMessage(result, toolCall.getId()));
         }
         return list;
     }
