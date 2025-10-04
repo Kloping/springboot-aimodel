@@ -35,6 +35,10 @@ import java.util.concurrent.atomic.AtomicReference;
 @Data
 @Accessors(chain = true)
 public class McpClient {
+    public enum ReconnectType {
+        RECONNECT_USE,
+        RECONNECT_NOW
+    }
 
     public McpClient(McpClientProperties properties) {
         this.server = properties.getServer();
@@ -45,6 +49,8 @@ public class McpClient {
         this.protocolVersion = properties.getProtocolVersion() != null ? properties.getProtocolVersion() : this.protocolVersion;
         this.heartbeat = properties.getHeartbeat();
     }
+
+    private ReconnectType reconnectType = ReconnectType.RECONNECT_USE;
 
     private String server;
     private String endpoint;
@@ -115,10 +121,13 @@ public class McpClient {
         if (bufferedReader != null) bufferedReader.close();
         _over = true;
         cdl = new CountDownLatch(1);
-        log.warn("mcp client {} over,when call before reconnect.", clientName);
-//        log.warn("mcp client {} over,delay 5s reconnect.", clientName);
-//        Thread.sleep(5000);
-//        initialize();
+        if (reconnectType == ReconnectType.RECONNECT_USE) {
+            log.warn("mcp client {} over,when call before reconnect.", clientName);
+        } else if (reconnectType == ReconnectType.RECONNECT_NOW) {
+            log.warn("mcp client {} over,delay 5s reconnect.", clientName);
+            Thread.sleep(5000);
+            initialize();
+        }
     }
 
     private volatile boolean _over = false;
